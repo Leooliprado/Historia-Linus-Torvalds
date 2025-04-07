@@ -28,6 +28,44 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      position: relative;
+    }
+
+    .start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.8);
+      z-index: 10;
+    }
+
+    .start-title {
+      font-size: 36px;
+      color: #4fc3f7;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .start-btn {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 15px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 5px;
+      transition: all 0.3s;
+    }
+
+    .start-btn:hover {
+      background-color: #444;
+      transform: scale(1.05);
     }
 
     .dialog-box {
@@ -148,18 +186,29 @@
     .player-name {
       color: #81c784;
     }
+
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 
 <body>
   <div class="game-container">
-    <div class="dialog-box" id="dialogBox">
+    <div class="start-screen" id="startScreen">
+      <h1 class="start-title">Diálogo RPG com Linus Torvalds</h1>
+      <button class="start-btn" id="startBtn">Iniciar Jogo</button>
+    </div>
+    <div class="dialog-box hidden" id="dialogBox">
       <!-- Diálogo será inserido aqui -->
     </div>
-    <div class="player-options" id="playerOptions">
+    <div class="player-options hidden" id="playerOptions">
       <!-- Opções do jogador serão inseridas aqui -->
     </div>
   </div>
+
+  <audio id="typeSound" src="mechanical-keyboard-typing-sound-effect-computer-typing-sound-320311 (mp3cut.net).mp3"
+    preload="auto"></audio>
 
   <script>
     // Estados do diálogo (mantido igual)
@@ -302,13 +351,30 @@
 
 
 
-
-    // Variáveis de estado
-    let currentState = "start";
+// Variáveis de estado
+let currentState = "start";
     const dialogBox = document.getElementById('dialogBox');
     const playerOptions = document.getElementById('playerOptions');
     const typeSound = document.getElementById("typeSound");
+    const startScreen = document.getElementById('startScreen');
+    const startBtn = document.getElementById('startBtn');
 
+    // Função para iniciar o jogo
+    function startGame() {
+      startScreen.classList.add('hidden');
+      dialogBox.classList.remove('hidden');
+      playerOptions.classList.remove('hidden');
+      
+      // Toca o som de digitação
+      typeSound.currentTime = 0;
+      typeSound.play();
+      
+      // Mostra o primeiro diálogo
+      showDialog(currentState);
+    }
+
+    // Event listener para o botão de iniciar
+    startBtn.addEventListener('click', startGame);
 
     // Função para mostrar o diálogo
     function showDialog(state) {
@@ -355,13 +421,21 @@
       let i = 0;
       const text = stateData.text;
       const speed = 20;
-
       function typeWriter() {
+        const audio = document.getElementById("typeSound");
+
+        if (i === 0) {
+          audio.currentTime = 0;
+          audio.play();
+        }
+
         if (i < text.length) {
           textDiv.innerHTML = text.substring(0, i + 1);
           i++;
           setTimeout(typeWriter, speed);
         } else {
+          audio.pause();
+          audio.currentTime = 0;
           textDiv.classList.remove('typing');
           showOptions(stateData.options);
         }
@@ -421,9 +495,6 @@
         playerOptions.appendChild(button);
       });
     }
-
-    // Inicia o jogo
-    showDialog(currentState);
   </script>
 </body>
 
