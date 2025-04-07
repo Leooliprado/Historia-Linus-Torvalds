@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diálogo RPG com o Criador do Linux</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      background-color: #121212;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .game-container {
+      width: 800px;
+      height: 600px;
+      background-color: #1e1e1e;
+      border: 4px solid #444;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dialog-box {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #252525;
+      border-bottom: 2px solid #444;
+    }
+
+    /* Nova estrutura para as mensagens */
+    .message {
+      display: flex;
+      margin-bottom: 20px;
+      gap: 15px;
+    }
+
+    .avatar-wrapper {
+      flex: 0 0 auto;
+      /* Não cresce, não encolhe, tamanho automático */
+      width: 80px;
+      height: 80px;
+    }
+
+    .linus-avatar {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid #4fc3f7;
+      object-fit: cover;
+      background-image: url('https://upload.wikimedia.org/wikipedia/commons/0/01/LinuxCon_Europe_Linus_Torvalds_03_%28cropped%29.jpg');
+      background-size: cover;
+      background-position: center;
+    }
+
+    .message-content {
+      flex: 1;
+      min-width: 0;
+      /* Permite que o texto quebre corretamente */
+    }
+
+    .character-name {
+      color: #4fc3f7;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .character-text {
+      line-height: 1.5;
+      min-height: 60px;
+    }
+
+    .player-options {
+      display: flex;
+      flex-direction: column;
+      padding: 15px;
+      background-color: #2a2a2a;
+    }
+
+    .option-btn {
+      background-color: #333;
+      color: #fff;
+      border: 1px solid #555;
+      padding: 12px;
+      margin: 5px 0;
+      cursor: pointer;
+      font-family: 'Courier New', monospace;
+      font-size: 16px;
+      border-radius: 5px;
+      transition: all 0.2s;
+    }
+
+    .option-btn:hover {
+      background-color: #444;
+      border-color: #666;
+    }
+
+    .typing {
+      display: inline-block;
+    }
+
+    .typing::after {
+      content: '|';
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0;
+      }
+    }
+
+    /* Estilo para mensagens do jogador */
+    .player-message {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+
+    .player-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid #81c784;
+      background-color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 40px;
+      color: #81c784;
+    }
+
+    .player-name {
+      color: #81c784;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="game-container">
+    <div class="dialog-box" id="dialogBox">
+      <!-- Diálogo será inserido aqui -->
+    </div>
+    <div class="player-options" id="playerOptions">
+      <!-- Opções do jogador serão inseridas aqui -->
+    </div>
+  </div>
+
+  <script>
+    // Estados do diálogo (mantido igual)
+    const dialogStates = {
+      "start": {
+        "text": "Você se encontra em um terminal escuro. De repente, uma figura familiar aparece. É Linus Torvalds, envolto por uma aura azulada de código binário.",
+        "options": [
+          { "text": "Quem é você?", "nextState": "whoAreYou" },
+          { "text": "Onde estou?", "nextState": "whereAmI" },
+          { "text": "Linux é melhor que Windows?", "nextState": "linuxVsWindows" }
+        ]
+      },
+      "whoAreYou": {
+        "text": "Eu sou Linus Torvalds. Criei o kernel Linux em 1991 quando era estudante na Universidade de Helsinki. Era apenas um hobby... que saiu um pouco do controle.",
+        "options": [
+          { "text": "Por que você criou o Linux?", "nextState": "whyCreateLinux" },
+          { "text": "Você ainda trabalha no kernel?", "nextState": "linuxToday" }
+        ]
+      },
+      "whereAmI": {
+        "text": "Você está em um espaço digital... entre comandos, bits e memória RAM. Um lugar onde o código respira. Aqui, só os verdadeiros programadores sobrevivem.",
+        "options": [
+          { "text": "Quem é você?", "nextState": "whoAreYou" },
+          { "text": "Como eu saio daqui?", "nextState": "exitTerminal" }
+        ]
+      },
+      "linuxVsWindows": {
+        "text": "Heh... essa é clássica. Linux oferece liberdade. Windows oferece... atualizações obrigatórias às 3 da manhã. Qual você prefere?",
+        "options": [
+          { "text": "Você já usou Windows?", "nextState": "usedWindows" },
+          { "text": "Qual sua distro favorita?", "nextState": "favoriteDistro" }
+        ]
+      },
+      "whyCreateLinux": {
+        "text": "Na verdade, eu só queria um sistema operacional que funcionasse do meu jeito. O Minix era limitado, então decidi fazer o meu próprio kernel.",
+        "options": [
+          { "text": "Você esperava que ele fosse tão grande?", "nextState": "linuxToday" },
+          { "text": "O que pensa sobre o futuro do Linux?", "nextState": "futureLinux" }
+        ]
+      },
+      "usedWindows": {
+        "text": "Sim... e sobrevivi. Era necessário às vezes, mas prefiro ambientes onde eu entendo o que está acontecendo sob o capô.",
+        "options": [
+          { "text": "Então você odeia a Microsoft?", "nextState": "hateMicrosoft" },
+          { "text": "E o MacOS?", "nextState": "macos" }
+        ]
+      },
+      "hateMicrosoft": {
+        "text": "Odeio não. Mas critiquei muito no passado. Hoje eles até colaboram com o kernel. O mundo muda.",
+        "options": [
+          { "text": "Isso é... surpreendente.", "nextState": "linuxToday" },
+          { "text": "Você confia neles?", "nextState": "trustMicrosoft" }
+        ]
+      },
+      "trustMicrosoft": {
+        "text": "Confiança é conquistada. Eles estão tentando. Mas o código aberto tem olhos demais para ser manipulado.",
+        "options": [
+          { "text": "Faz sentido. Obrigado, Linus.", "nextState": "ending" }
+        ]
+      },
+      "macos": {
+        "text": "Unix-like, bonito... mas fechado demais. Ainda assim, melhor que Windows em muitos aspectos.",
+        "options": [
+          { "text": "Você usa Mac?", "nextState": "useLinuxToday" },
+          { "text": "Linux pode ser bonito também!", "nextState": "linuxBeauty" }
+        ]
+      },
+      "linuxBeauty": {
+        "text": "Com certeza. KDE, GNOME, i3... a beleza está na escolha. E no fundo preto com letras verdes.",
+        "options": [
+          { "text": "Haha, clássico!", "nextState": "ending" },
+          { "text": "Qual sua distro favorita?", "nextState": "favoriteDistro" }
+        ]
+      },
+      "favoriteDistro": {
+        "text": "Fedora. É onde testam muitas novidades antes de irem para o Red Hat. E funciona bem com o kernel mais recente.",
+        "options": [
+          { "text": "Já usou Arch Linux?", "nextState": "archLinux" },
+          { "text": "Já que você gosta de estabilidade, por que não Debian?", "nextState": "debian" }
+        ]
+      },
+      "archLinux": {
+        "text": "Claro. Arch é ótimo... se você sabe o que está fazendo. 'I use Arch, btw.'",
+        "options": [
+          { "text": "Hahaha, clássico!", "nextState": "ending" }
+        ]
+      },
+      "debian": {
+        "text": "Debian é sólido. Mas às vezes conservador demais. Prefiro testar os limites.",
+        "options": [
+          { "text": "Respeito sua escolha.", "nextState": "ending" }
+        ]
+      },
+      "useLinuxToday": {
+        "text": "Sim. Fedora. Mas como sempre digo: o importante é o kernel. O resto é decoração.",
+        "options": [
+          { "text": "Você ainda trabalha no kernel?", "nextState": "linuxToday" }
+        ]
+      },
+      "linuxToday": {
+        "text": "O Linux está em todo lugar: servidores, celulares, TVs... até na sua geladeira, talvez. Mas ainda assim, muitos nem sabem o que é um kernel.",
+        "options": [
+          { "text": "Como você se sente com isso?", "nextState": "feelAboutSuccess" },
+          { "text": "Obrigado, Linus. Foi uma honra.", "nextState": "ending" }
+        ]
+      },
+      "futureLinux": {
+        "text": "Acho que o Linux continuará crescendo, especialmente em áreas embarcadas e cloud. Liberdade, segurança e colaboração sempre vencem no final.",
+        "options": [
+          { "text": "Eu quero aprender Linux. Alguma dica?", "nextState": "learnLinux" },
+          { "text": "Obrigado, Linus. Foi uma honra.", "nextState": "ending" }
+        ]
+      },
+      "feelAboutSuccess": {
+        "text": "É estranho. Eu nunca quis fama. Mas fico feliz que algo que eu criei ajudou tantas pessoas. Só quero que continuem melhorando o código.",
+        "options": [
+          { "text": "Eu quero aprender Linux. Alguma dica?", "nextState": "learnLinux" },
+          { "text": "Obrigado, Linus. Foi uma honra.", "nextState": "ending" }
+        ]
+      },
+      "learnLinux": {
+        "text": "Abra um terminal. Use o 'man'. Quebre coisas. Aprenda com os erros. A comunidade está aí. Ninguém nasce sabendo — nem mesmo o root.",
+        "options": [
+          { "text": "Obrigado, Linus. Foi uma honra.", "nextState": "ending" }
+        ]
+      },
+      "exitTerminal": {
+        "text": "Você só sairá quando tiver aprendido algo. O conhecimento é a chave, jovem hacker.",
+        "options": [
+          { "text": "Ok... então me ensine.", "nextState": "learnLinux" }
+        ]
+      },
+      "ending": {
+        "text": "Linus acena com a cabeça, e a escuridão do terminal começa a se dissipar. Você acorda diante do seu computador, o terminal ainda aberto...\n\n$ sudo apt-get install conhecimento",
+        "options": [
+          { "text": "Jogar novamente", "nextState": "start" },
+        ]
+      }
+    };
+
+
+
+
+    // Variáveis de estado
+    let currentState = "start";
+    const dialogBox = document.getElementById('dialogBox');
+    const playerOptions = document.getElementById('playerOptions');
+    const typeSound = document.getElementById("typeSound");
+
+
+    // Função para mostrar o diálogo
+    function showDialog(state) {
+      currentState = state;
+      const stateData = dialogStates[state];
+
+      // Limpa o diálogo anterior
+      dialogBox.innerHTML = '';
+
+      // Cria a mensagem
+      const messageDiv = document.createElement('div');
+      messageDiv.className = 'message';
+
+      // Avatar (agora com wrapper dedicado)
+      const avatarWrapper = document.createElement('div');
+      avatarWrapper.className = 'avatar-wrapper';
+
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'linus-avatar';
+
+      // Conteúdo da mensagem
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+
+      const nameDiv = document.createElement('div');
+      nameDiv.className = 'character-name';
+      nameDiv.textContent = 'Linus Torvalds';
+
+      const textDiv = document.createElement('div');
+      textDiv.className = 'character-text typing';
+      textDiv.id = 'typingText';
+
+      // Monta a estrutura
+      avatarWrapper.appendChild(avatarDiv);
+      contentDiv.appendChild(nameDiv);
+      contentDiv.appendChild(textDiv);
+
+      messageDiv.appendChild(avatarWrapper);
+      messageDiv.appendChild(contentDiv);
+
+      dialogBox.appendChild(messageDiv);
+
+      // Efeito de digitação
+      let i = 0;
+      const text = stateData.text;
+      const speed = 20;
+
+      function typeWriter() {
+        if (i < text.length) {
+          textDiv.innerHTML = text.substring(0, i + 1);
+          i++;
+          setTimeout(typeWriter, speed);
+        } else {
+          textDiv.classList.remove('typing');
+          showOptions(stateData.options);
+        }
+      }
+
+      typeWriter();
+
+      // Rolagem automática
+      dialogBox.scrollTop = dialogBox.scrollHeight;
+    }
+
+    // Função para mostrar opções do jogador
+    function showOptions(options) {
+      playerOptions.innerHTML = '';
+
+      options.forEach(option => {
+        const button = document.createElement('button');
+        button.className = 'option-btn';
+        button.textContent = option.text;
+        button.addEventListener('click', () => {
+          // Adiciona resposta do jogador
+          const playerDiv = document.createElement('div');
+          playerDiv.className = 'message player-message';
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'message-content';
+
+          const nameDiv = document.createElement('div');
+          nameDiv.className = 'character-name player-name';
+          nameDiv.textContent = 'Você';
+
+          const textDiv = document.createElement('div');
+          textDiv.className = 'character-text';
+          textDiv.textContent = option.text;
+
+          const avatarWrapper = document.createElement('div');
+          avatarWrapper.className = 'avatar-wrapper';
+
+          const avatarDiv = document.createElement('div');
+          avatarDiv.className = 'player-avatar';
+          avatarDiv.textContent = '>';
+
+          // Monta estrutura
+          contentDiv.appendChild(nameDiv);
+          contentDiv.appendChild(textDiv);
+          avatarWrapper.appendChild(avatarDiv);
+
+          playerDiv.appendChild(contentDiv);
+          playerDiv.appendChild(avatarWrapper);
+
+          dialogBox.appendChild(playerDiv);
+
+          // Mostra próximo diálogo
+          showDialog(option.nextState);
+        });
+
+        playerOptions.appendChild(button);
+      });
+    }
+
+    // Inicia o jogo
+    showDialog(currentState);
+  </script>
+</body>
+
+</html>
